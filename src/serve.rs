@@ -40,14 +40,22 @@ impl ServeManager {
         }
     }
     pub fn serve(&mut self, resource: String) -> String {
+        println!("Serving: {resource}");
         let wanted_path = resource.trim_start_matches("/");
 
-        if let Some(page) = self
-            .pages_cache
-            .iter_mut()
-            .find(|x| x.path.to_str() == Some(wanted_path))
-        {
-            return page.serve().unwrap_or_else(|_| "Error appended".into());
+        for attempts in 0..2 {
+            if let Some(page) = self.pages_cache.iter_mut().find(|x| {
+                x.path
+                    .strip_prefix(&self.root_dir).ok()
+                    == Some(wanted_path.as_ref())
+            }) {
+                println!("Page found, serving");
+                return page.serve().unwrap_or_else(|_| "Error appended".into());
+            }
+
+            if attempts == 0 {
+                self.populate_from_root();
+            }
         }
 
         "No page found".into()

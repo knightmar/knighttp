@@ -33,6 +33,7 @@ impl Page {
 
     pub fn serve(&mut self) -> io::Result<String> {
         if self.is_page_obsolete() {
+            println!("Page is obsolete, reloading cache");
             self.update_from_file()?;
         }
         Ok(self.content.clone())
