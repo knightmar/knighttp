@@ -1,21 +1,23 @@
+mod errors;
 mod pages;
 mod serve;
 
 use crate::serve::ServeManager;
-use rand::{RngExt, random};
-use std::fmt::format;
 use std::io::{BufRead, BufReader, Write};
-use std::net::{TcpListener, TcpStream};
+use std::net::TcpListener;
 
+/// Entry point: listens at port 8080 and calls the part to populate and serve the pages
 fn main() {
     let mut manager = ServeManager::new("./pages".into());
     manager.populate_from_root();
 
+    // binds the port and iterate over all the clients to serve the pages
     let listener = TcpListener::bind("0.0.0.0:8080").unwrap();
     for stream in listener.incoming() {
         let mut stream = stream.unwrap();
         let mut reader = BufReader::new(&mut stream);
 
+        // get the resource asked
         let mut line = String::new();
         let mut resource = String::new();
         if reader.read_line(&mut line).is_ok() {
@@ -23,11 +25,9 @@ fn main() {
             resource = chunks[1].into();
         };
 
-        let content = manager.serve(resource);
-        let len = content.len();
-        let headers = format!("Content-Length: {len}\r\nContent-Type: text/html");
-        stream
-            .write_all(format!("HTTP/1.1 200 OK\r\n{headers}\r\n\r\n{content}").as_bytes())
-            .unwrap();
+        // serve the resource and store the reply to the request 
+        let reply = manager.serve(resource);
+        
+        stream.write_all(reply.as_bytes()).unwrap();
     }
 }
