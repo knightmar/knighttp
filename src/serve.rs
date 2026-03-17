@@ -68,7 +68,7 @@ impl ServeManager {
                 if self.verbose {
                     println!("Page found, serving");
                 }
-                if let Some(page_content) = page.serve(self.verbose).ok() {
+                if let Ok(page_content) = page.serve(self.verbose) {
                     content = page_content;
                     return_code = ReturnCodes::Success;
                 } else {

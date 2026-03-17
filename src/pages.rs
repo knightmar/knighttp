@@ -22,7 +22,7 @@ impl Resource {
 
         Ok(Self {
             content,
-            path: PathBuf::from(path),
+            path,
             last_edit_date,
         })
     }
