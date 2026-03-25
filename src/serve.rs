@@ -28,6 +28,7 @@ impl ServeManager {
     /// Populate the pages_cache by performing a BFS on the root_dir
     /// It is called once on start, and at each time a page not found error is encountered
     pub fn populate_from_root(&mut self) {
+        self.resource_cache.clear();
         let mut queue: VecDeque<PathBuf> = VecDeque::new();
 
         queue.push_back(PathBuf::from(&self.root_dir));
@@ -66,13 +67,14 @@ impl ServeManager {
                 if let Some(page_content) = page.serve().ok() {
                     content = page_content;
                     return_code = ReturnCodes::Success;
+                    break;
                 } else {
                     content = "Error happened".into();
                     return_code = ReturnCodes::BackendError;
                 };
             }
 
-            if attempts == 0 {
+            if attempts != 0 {
                 self.populate_from_root();
             }
         }
