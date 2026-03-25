@@ -1,10 +1,7 @@
 use crate::errors::ReturnCodes;
-use crate::errors::ReturnCodes::NotFound;
 use crate::pages::Resource;
 use std::collections::VecDeque;
 use std::fs;
-use std::fs::File;
-use std::io::Read;
 use std::path::PathBuf;
 
 /// ServeManager is the struct managing all pages and serving them
@@ -12,14 +9,16 @@ use std::path::PathBuf;
 /// - root_dir : Path of the based resource directory
 /// - resource_cache : a Vec of Pages that were found in the resource directory
 pub struct ServeManager {
+    verbose: bool,
     root_dir: PathBuf,
     resource_cache: Vec<Resource>,
 }
 
 impl ServeManager {
     /// Creates a ServeManager based on the root_dir
-    pub fn new(root_dir: String) -> Self {
+    pub fn new(root_dir: String, verbose: bool) -> Self {
         ServeManager {
+            verbose,
             root_dir: PathBuf::from(root_dir),
             resource_cache: vec![],
         }
@@ -44,7 +43,9 @@ impl ServeManager {
                 if let Ok(page) = Resource::new(path) {
                     self.resource_cache.push(page);
                 } else {
-                    println!("Warning: Could not load file into cache");
+                    if self.verbose {
+                        println!("Warning: Could not load file into cache");
+                    }
                 }
             }
         }
@@ -52,7 +53,9 @@ impl ServeManager {
 
     /// Serves the resource requested, and updates it if it's not found (maybe the resource was created since the start of the server)
     pub fn serve(&mut self, resource: String) -> String {
-        println!("Serving: {resource}");
+        if self.verbose {
+            println!("Serving: {resource}");
+        }
         let wanted_path = resource.trim_start_matches("/");
         let mut content = String::from("No page found");
         let mut return_code = ReturnCodes::NotFound;
@@ -63,8 +66,10 @@ impl ServeManager {
                 .iter_mut()
                 .find(|x| x.path.strip_prefix(&self.root_dir).ok() == Some(wanted_path.as_ref()))
             {
-                println!("Page found, serving");
-                if let Some(page_content) = page.serve().ok() {
+                if self.verbose {
+                    println!("Page found, serving");
+                }
+                if let Ok(page_content) = page.serve(self.verbose) {
                     content = page_content;
                     return_code = ReturnCodes::Success;
                     break;

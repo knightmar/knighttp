@@ -1,8 +1,7 @@
 use std::fs;
 use std::io;
-use std::io::{Error, Read};
-use std::path::{Path, PathBuf};
-use std::time::{Duration, SystemTime};
+use std::path::PathBuf;
+use std::time::SystemTime;
 
 /// Represents a resource on disk
 /// # Page struct :
@@ -23,7 +22,7 @@ impl Resource {
 
         Ok(Self {
             content,
-            path: PathBuf::from(path),
+            path,
             last_edit_date,
         })
     }
@@ -40,9 +39,11 @@ impl Resource {
     }
 
     /// Serves the resource and updates it if it's obsolete before serving it
-    pub fn serve(&mut self) -> io::Result<String> {
+    pub fn serve(&mut self, verbose: bool) -> io::Result<String> {
         if self.is_page_obsolete() {
-            println!("Page is obsolete, reloading cache");
+            if verbose {
+                println!("Page is obsolete, reloading cache");
+            }
             self.update_from_file()?;
         }
         Ok(self.content.clone())
