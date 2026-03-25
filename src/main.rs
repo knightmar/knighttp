@@ -3,6 +3,7 @@ mod pages;
 mod serve;
 
 use crate::serve::ServeManager;
+use regex::Regex;
 use std::env;
 use std::io::{BufRead, BufReader, Write};
 use std::net::TcpListener;
@@ -23,6 +24,8 @@ fn main() {
         None => "8080",
     };
 
+    let mut is_valid_request = false;
+
     // binds the port and iterate over all the clients to serve the pages
     let listener = TcpListener::bind(format!("0.0.0.0:{port}")).unwrap();
     for stream in listener.incoming() {
@@ -33,13 +36,37 @@ fn main() {
         let mut line = String::new();
         let mut resource = String::new();
         if reader.read_line(&mut line).is_ok() {
-            let chunks: Vec<&str> = line.split(" ").collect();
-            resource = chunks[1].into();
+            if is_valid_get_request(&line) {
+                is_valid_request = true;
+                let chunks: Vec<&str> = line.split(" ").collect();
+                resource = chunks[1].into();
+            }
         };
 
         // serve the resource and store the reply to the request
-        let reply = manager.serve(resource);
+        let headers = "Content-Length: 11\r\nContent-Type: html".to_string();
+        let mut reply = format!("HTTP/1.1 400 OK\r\n{headers}\r\n\r\nBad Request");
+        if is_valid_request {
+            reply = manager.serve(resource);
+        }
 
         stream.write_all(reply.as_bytes()).unwrap();
+    }
+
+    pub fn is_valid_get_request(line: &str) -> bool {
+        static RE: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
+        let re = RE.get_or_init(|| {
+            Regex::new(
+                r"(?x)
+            ^GET\s+
+            (/[a-zA-Z0-9.\-_~%!$&'()*+,;=:@/]*)     # path
+            (?:\?[a-zA-Z0-9.\-_~%!$&'()*+,;=:@/?&]*)? # query
+            \s+HTTP/(1\.0|1\.1|2(?:\.0)?)$           # proto
+        ",
+            )
+            .unwrap()
+        });
+
+        re.is_match(line)
     }
 }
