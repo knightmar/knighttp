@@ -38,8 +38,10 @@ fn main() {
         if reader.read_line(&mut line).is_ok() {
             if is_valid_get_request(&line) {
                 is_valid_request = true;
-                let chunks: Vec<&str> = line.split(" ").collect();
-                resource = chunks[1].into();
+                let chunks: Vec<&str> = line.split_whitespace().collect();
+                if chunks.len() >= 2 {
+                    let resource = chunks[1];
+                }
             } else {
                 is_valid_request = false;
             }
@@ -52,13 +54,10 @@ fn main() {
             reply = manager.serve(resource);
         }
 
-        println!("{is_valid_request}");
-
         stream.write_all(reply.as_bytes()).unwrap();
     }
 
     pub fn is_valid_get_request(line: &str) -> bool {
-        println!("{line}");
         static RE: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
         let re = RE.get_or_init(|| {
             Regex::new(
