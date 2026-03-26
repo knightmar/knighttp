@@ -37,10 +37,10 @@ fn main() {
         let mut resource = String::new();
         if reader.read_line(&mut line).is_ok() {
             if is_valid_get_request(&line) {
-                is_valid_request = true;
                 let chunks: Vec<&str> = line.split_whitespace().collect();
                 if chunks.len() >= 2 {
-                    let resource = chunks[1];
+                    is_valid_request = true;
+                    resource = chunks[1].into();
                 }
             } else {
                 is_valid_request = false;
